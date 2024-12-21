@@ -179,6 +179,7 @@ fn main() {
 
             SDL_GetWindowSize(win, &mut window_w, &mut window_h);
             gl.Uniform2i(window_size, window_w, window_h);
+            gl.Viewport(0, 0, window_w, window_h);
 
             SDL_GetMouseState(&mut mouse_x, &mut mouse_y);
             gl.Uniform2i(mouse_pos, mouse_x, mouse_y);
