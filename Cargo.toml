@@ -1,0 +1,8 @@
+[package]
+name = "portfolio_opengl"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fermium = "22605.0.0"
+gl33 = "0.2.1"
