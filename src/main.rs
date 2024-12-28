@@ -237,26 +237,15 @@ fn main() {
 
         let (mut window_w, mut window_h) = (0, 0);
 
-        let azimuth_matrix_pos = gl.GetUniformLocation(shader_program, "azimuth_matrix\0".as_ptr());
-        assert_ne!(
-            azimuth_matrix_pos, -1,
-            "Location \"azimuth_matrix\" does not exist"
-        );
-        let elevation_matrix_pos =
-            gl.GetUniformLocation(shader_program, "elevation_matrix\0".as_ptr());
-        assert_ne!(
-            azimuth_matrix_pos, -1,
-            "Location \"elevation_matrix\" does not exist"
-        );
         let view_matrix_pos = gl.GetUniformLocation(shader_program, "view_matrix\0".as_ptr());
         assert_ne!(
-            azimuth_matrix_pos, -1,
+            view_matrix_pos, -1,
             "Location \"view_matrix\" does not exist"
         );
         let perspective_matrix_pos =
             gl.GetUniformLocation(shader_program, "perspective_matrix\0".as_ptr());
         assert_ne!(
-            azimuth_matrix_pos, -1,
+            perspective_matrix_pos, -1,
             "Location \"perspective_matrix\" does not exist"
         );
 
@@ -292,21 +281,22 @@ fn main() {
                 distance += 1.0 / 60.0;
             }
 
+            let camera_pos = glm::vec3(
+                distance * f32::cos(azimuth) * f32::cos(elevation),
+                distance * f32::sin(elevation),
+                distance * f32::sin(azimuth) * f32::cos(elevation),
+            );
+
             SDL_GetWindowSize(win, &mut window_w, &mut window_h);
             gl.Viewport(0, 0, window_w, window_h);
 
-            let rotation = glm::rotation(azimuth, &glm::vec3(0.0, 1.0, 0.0));
-            let elevation = glm::rotation(elevation, &glm::vec3(1.0, 0.0, 0.0));
-            let view = glm::translation(&glm::vec3(0.0, 0.0, -distance));
+            let view = glm::look_at(
+                &camera_pos,
+                &glm::vec3(0.0, 0.0, 0.0),
+                &glm::vec3(0.0, 1.0, 0.0),
+            );
             let projection = glm::perspective(window_w as f32 / window_h as f32, 1.25, 0.1, 100.0);
 
-            gl.UniformMatrix4fv(azimuth_matrix_pos, 1, 0, rotation.data.as_slice().as_ptr());
-            gl.UniformMatrix4fv(
-                elevation_matrix_pos,
-                1,
-                0,
-                elevation.data.as_slice().as_ptr(),
-            );
             gl.UniformMatrix4fv(view_matrix_pos, 1, 0, view.data.as_slice().as_ptr());
             gl.UniformMatrix4fv(
                 perspective_matrix_pos,
