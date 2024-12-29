@@ -183,6 +183,8 @@ fn main() {
         let mut elevation = PI / 4.0;
         let mut distance = 3.0;
 
+        let data = get_mesh_data();
+
         'main_loop: loop {
             let mut event = SDL_Event::default();
             while SDL_PollEvent(&mut event) != 0 {
@@ -239,7 +241,6 @@ fn main() {
             let transform = projection * view;
             gl.UniformMatrix4fv(transform_uniform, 1, 0, transform.data.as_slice().as_ptr());
 
-            let data = get_mesh_data();
             gl.BindBuffer(GL_ARRAY_BUFFER, vbo);
             gl.BufferData(
                 GL_ARRAY_BUFFER,
