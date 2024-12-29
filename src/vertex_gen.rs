@@ -1,5 +1,7 @@
 // In the future, we should read this data from .obj files instead of having static arrays
 
+use std::{fs::File, io::Read};
+
 // The position of each vertex
 pub type VertexPos = [f32; 3];
 pub const VERTEX_POS_COUNT: usize = 8;
@@ -94,6 +96,27 @@ pub type Vertex = [f32; 8];
 
 /// Gets the vertices of the mesh from the indexed data
 pub fn get_mesh_data() -> Vec<Vertex> {
+    let mut file = File::open("cube.obj").expect("Couldn't find cube.obj");
+    let mut obj = String::default();
+    let _ = file.read_to_string(&mut obj);
+    drop(file);
+    let lines = obj.lines().map(|line| line.trim());
+    for line in lines {
+        let mut split = line.split(" ");
+        match split.next() {
+            Some("v") => {
+                println!("Found a vertex");
+            }
+            Some("vt") => {
+                println!("Found a tex");
+            }
+            Some("vn") => {
+                println!("Found a normal");
+            }
+            _ => {}
+        }
+    }
+
     let mut vertices: Vec<Vertex> = vec![];
     for index in INDICES {
         let pos = VERTEX_POS_COORDS.get(index[0] as usize - 1).unwrap();
