@@ -183,7 +183,7 @@ fn main() {
         let mut elevation = PI / 4.0;
         let mut distance = 3.0;
 
-        let data = get_mesh_data();
+        let data = get_mesh_data("mesh/absurd_res_sphere.obj");
 
         'main_loop: loop {
             let mut event = SDL_Event::default();
