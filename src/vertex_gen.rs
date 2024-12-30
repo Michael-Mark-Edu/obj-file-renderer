@@ -96,7 +96,7 @@ pub type Vertex = [f32; 8];
 
 /// Gets the vertices of the mesh from the indexed data
 pub fn get_mesh_data() -> Vec<Vertex> {
-    let mut file = File::open("cube.obj").expect("Couldn't find cube.obj");
+    let mut file = File::open("mesh/cube.obj").expect("Couldn't find mesh/cube.obj");
     let mut obj = String::default();
     let _ = file.read_to_string(&mut obj);
     drop(file);
