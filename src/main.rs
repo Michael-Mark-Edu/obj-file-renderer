@@ -1,5 +1,6 @@
 use fermium::prelude::*;
 use gl33::*;
+use image::ImageReader;
 use std::{f32::consts::PI, fs::File, io::Read};
 
 mod vertex_gen;
@@ -165,7 +166,85 @@ fn main() {
         // Set clear color
         gl.ClearColor(0.2, 0.3, 0.3, 1.0);
 
+        // Load texture
+        let diffuse_img = ImageReader::open("texture/container.png")
+            .expect("Couldn't find container")
+            .decode()
+            .unwrap();
+        let diffuse_img = diffuse_img.flipv();
+        let diffuse_bytes = diffuse_img.as_bytes();
+
+        let mut diffuse: u32 = 0;
+        gl.GenTextures(1, &mut diffuse);
+        gl.BindTexture(GL_TEXTURE_2D, diffuse);
+        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER.0 as _);
+        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER.0 as _);
+        gl.TexParameteri(
+            GL_TEXTURE_2D,
+            GL_TEXTURE_MIN_FILTER,
+            GL_LINEAR_MIPMAP_LINEAR.0 as _,
+        );
+        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR.0 as _);
+        gl.TexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGBA.0 as _,
+            diffuse_img.width() as _,
+            diffuse_img.height() as _,
+            0,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            diffuse_bytes.as_ptr() as _,
+        );
+        gl.GenerateMipmap(GL_TEXTURE_2D);
+
+        // Load specular map
+        let specular_img = ImageReader::open("texture/container_specular.png")
+            .expect("Couldn't find container")
+            .decode()
+            .unwrap();
+        let specular_img = specular_img.flipv();
+        let specular_bytes = specular_img.as_bytes();
+
+        let mut specular: u32 = 0;
+        gl.GenTextures(1, &mut specular);
+        gl.BindTexture(GL_TEXTURE_2D, specular);
+        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER.0 as _);
+        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER.0 as _);
+        gl.TexParameteri(
+            GL_TEXTURE_2D,
+            GL_TEXTURE_MIN_FILTER,
+            GL_LINEAR_MIPMAP_LINEAR.0 as _,
+        );
+        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR.0 as _);
+        gl.TexImage2D(
+            GL_TEXTURE_2D,
+            0,
+            GL_RGBA.0 as _,
+            specular_img.width() as _,
+            specular_img.height() as _,
+            0,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            specular_bytes.as_ptr() as _,
+        );
+        gl.GenerateMipmap(GL_TEXTURE_2D);
+
         // Get uniform locations
+        let diffuse_uniform = gl.GetUniformLocation(shader_program, "diffuse_map\0".as_ptr());
+        assert_ne!(
+            diffuse_uniform, -1,
+            "Uniform \"diffuse_map\" does not exist"
+        );
+        gl.Uniform1i(diffuse_uniform, 0);
+
+        let specular_uniform = gl.GetUniformLocation(shader_program, "specular_map\0".as_ptr());
+        assert_ne!(
+            specular_uniform, -1,
+            "Uniform \"specular_map\" does not exist"
+        );
+        gl.Uniform1i(specular_uniform, 1);
+
         let transform_uniform = gl.GetUniformLocation(shader_program, "transform\0".as_ptr());
         assert_ne!(
             transform_uniform, -1,
@@ -183,7 +262,7 @@ fn main() {
         let mut elevation = PI / 4.0;
         let mut distance = 3.0;
 
-        let data = get_mesh_data("mesh/absurd_res_sphere.obj");
+        let data = get_mesh_data("mesh/cube.obj");
 
         'main_loop: loop {
             let mut event = SDL_Event::default();
@@ -235,11 +314,16 @@ fn main() {
             );
             let projection = glm::perspective(window_w as f32 / window_h as f32, 1.25, 0.1, 100.0);
 
-            // Althought matrix multiplication is faster on the GPU, I do it on the CPU since
+            // Although matrix multiplication is faster on the GPU, I do it on the CPU since
             // otherwise I'd have to compute this multiplication for each vertex. Here I only
             // have to do it once for all vertices
             let transform = projection * view;
             gl.UniformMatrix4fv(transform_uniform, 1, 0, transform.data.as_slice().as_ptr());
+
+            gl.ActiveTexture(GL_TEXTURE0);
+            gl.BindTexture(GL_TEXTURE_2D, diffuse);
+            gl.ActiveTexture(GL_TEXTURE1);
+            gl.BindTexture(GL_TEXTURE_2D, specular);
 
             gl.BindBuffer(GL_ARRAY_BUFFER, vbo);
             gl.BufferData(
