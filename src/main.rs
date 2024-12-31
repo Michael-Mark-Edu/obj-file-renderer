@@ -6,6 +6,8 @@ use std::{f32::consts::PI, fs::File, io::Read};
 mod vertex_gen;
 use vertex_gen::*;
 
+mod material_gen;
+
 extern crate nalgebra_glm as glm;
 
 unsafe fn is_key_down(keystate: *const u8, code: SDL_Scancode) -> bool {
@@ -230,6 +232,9 @@ fn main() {
         );
         gl.GenerateMipmap(GL_TEXTURE_2D);
 
+        // Get mesh and material data
+        let (mesh, material) = get_mesh_data("mesh/cube.obj");
+
         // Get uniform locations
         let diffuse_uniform = gl.GetUniformLocation(shader_program, "diffuse_map\0".as_ptr());
         assert_ne!(
@@ -253,16 +258,68 @@ fn main() {
 
         let camera_pos_uniform = gl.GetUniformLocation(shader_program, "camera_pos\0".as_ptr());
         assert_ne!(
-            transform_uniform, -1,
+            camera_pos_uniform, -1,
             "Uniform \"camera_pos\" does not exist"
         );
+
+        let ambient_uniform = gl.GetUniformLocation(shader_program, "material.ambient\0".as_ptr());
+        assert_ne!(
+            ambient_uniform, -1,
+            "Uniform \"material.ambient\" does not exist"
+        );
+
+        let diffuse_uniform = gl.GetUniformLocation(shader_program, "material.diffuse\0".as_ptr());
+        assert_ne!(
+            diffuse_uniform, -1,
+            "Uniform \"material.diffuse\" does not exist"
+        );
+
+        let specular_uniform =
+            gl.GetUniformLocation(shader_program, "material.specular\0".as_ptr());
+        assert_ne!(
+            specular_uniform, -1,
+            "Uniform \"material.specular\" does not exist"
+        );
+
+        let shininess_uniform =
+            gl.GetUniformLocation(shader_program, "material.shininess\0".as_ptr());
+        assert_ne!(
+            shininess_uniform, -1,
+            "Uniform \"material.shininess\" does not exist"
+        );
+
+        if let Some(material) = material {
+            gl.Uniform3f(
+                ambient_uniform,
+                material.ambient[0],
+                material.ambient[1],
+                material.ambient[2],
+            );
+            gl.Uniform3f(
+                diffuse_uniform,
+                material.diffuse[0],
+                material.diffuse[1],
+                material.diffuse[2],
+            );
+            gl.Uniform3f(
+                specular_uniform,
+                material.specular[0],
+                material.specular[1],
+                material.specular[2],
+            );
+            gl.Uniform1f(shininess_uniform, material.shininess);
+        } else {
+            println!("Couldn't find a material; resorting to sensible defaults");
+            gl.Uniform3f(ambient_uniform, 0.1, 0.1, 0.1);
+            gl.Uniform3f(diffuse_uniform, 1.0, 1.0, 1.0);
+            gl.Uniform3f(specular_uniform, 0.5, 0.5, 0.5);
+            gl.Uniform1f(shininess_uniform, 32.0);
+        }
 
         // Cross-frame state variables
         let mut azimuth = PI / 4.0;
         let mut elevation = PI / 4.0;
         let mut distance = 3.0;
-
-        let data = get_mesh_data("mesh/cube.obj");
 
         'main_loop: loop {
             let mut event = SDL_Event::default();
@@ -328,13 +385,13 @@ fn main() {
             gl.BindBuffer(GL_ARRAY_BUFFER, vbo);
             gl.BufferData(
                 GL_ARRAY_BUFFER,
-                (data.len() * (4 * 8)) as isize,
-                data.as_ptr().cast(),
+                (mesh.len() * (4 * 8)) as isize,
+                mesh.as_ptr().cast(),
                 GL_STATIC_DRAW,
             );
 
             gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            gl.DrawArrays(GL_TRIANGLES, 0, (3 * data.len()) as i32);
+            gl.DrawArrays(GL_TRIANGLES, 0, (3 * mesh.len()) as i32);
 
             SDL_GL_SwapWindow(win);
         }

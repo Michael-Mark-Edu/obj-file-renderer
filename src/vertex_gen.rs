@@ -1,5 +1,7 @@
 use std::{fs::File, io::Read};
 
+use crate::material_gen::{get_material, Material};
+
 pub type VertexPos = [f32; 3];
 pub type VertexTex = [f32; 2];
 pub type VertexNormal = [f32; 3];
@@ -7,7 +9,7 @@ pub type Index = [u32; 3];
 pub type Vertex = [f32; 8];
 
 /// Gets the vertices of the mesh from the indexed data
-pub fn get_mesh_data(filepath: &str) -> Vec<Vertex> {
+pub fn get_mesh_data(filepath: &str) -> (Vec<Vertex>, Option<Material>) {
     let mut file = File::open(filepath).expect(format!("Couldn't find file {filepath}").as_str());
     let mut obj = String::default();
     let _ = file.read_to_string(&mut obj);
@@ -17,11 +19,20 @@ pub fn get_mesh_data(filepath: &str) -> Vec<Vertex> {
     let mut vertex_uvs: Vec<VertexTex> = vec![];
     let mut vertex_normals: Vec<VertexNormal> = vec![];
     let mut face_indices: Vec<Index> = vec![];
+    let mut mtllib: &str = "";
+    let mut material: Option<Material> = None;
 
     let lines = obj.lines().map(|line| line.trim());
     for line in lines {
         let mut split = line.split(" ");
         match split.next() {
+            Some("mtllib") => {
+                mtllib = split.next().unwrap();
+            }
+            Some("usemtl") => {
+                material =
+                    get_material(format!("material/{mtllib}").as_str(), split.next().unwrap());
+            }
             Some("v") => {
                 vertex_positions.push([
                     split.next().unwrap().parse::<f32>().unwrap(),
@@ -92,5 +103,5 @@ pub fn get_mesh_data(filepath: &str) -> Vec<Vertex> {
             pos[0], pos[1], pos[2], tex[0], tex[1], normal[0], normal[1], normal[2],
         ]);
     }
-    vertices
+    (vertices, material)
 }

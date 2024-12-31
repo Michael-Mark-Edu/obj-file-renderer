@@ -24,9 +24,10 @@ struct Light {
   vec3 specular;
 };
 
+uniform Material material;
+
 // Phong lighting model
 void main() {
-  Material material = Material(vec3(0.1), vec3(1.0), vec3(0.5), 32.0);
   Light light = Light(vec3(2.0, 1.2, 1.5), vec3(1.0, 1.0, 0.0),
                       vec3(0.0, 1.0, 1.0), vec3(1.0, 0.0, 1.0));
 
