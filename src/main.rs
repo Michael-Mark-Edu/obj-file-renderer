@@ -235,33 +235,25 @@ fn main() {
             "Uniform \"material.shininess\" does not exist"
         );
 
-        if let Some(material) = &material {
-            glUniform3f(
-                ambient_uniform,
-                material.ambient[0],
-                material.ambient[1],
-                material.ambient[2],
-            );
-            glUniform3f(
-                diffuse_uniform,
-                material.diffuse[0],
-                material.diffuse[1],
-                material.diffuse[2],
-            );
-            glUniform3f(
-                specular_uniform,
-                material.specular[0],
-                material.specular[1],
-                material.specular[2],
-            );
-            glUniform1f(shininess_uniform, material.shininess);
-        } else {
-            println!("Couldn't find a material; resorting to sensible defaults");
-            glUniform3f(ambient_uniform, 0.1, 0.1, 0.1);
-            glUniform3f(diffuse_uniform, 1.0, 1.0, 1.0);
-            glUniform3f(specular_uniform, 0.5, 0.5, 0.5);
-            glUniform1f(shininess_uniform, 32.0);
-        }
+        glUniform3f(
+            ambient_uniform,
+            material.ambient[0],
+            material.ambient[1],
+            material.ambient[2],
+        );
+        glUniform3f(
+            diffuse_uniform,
+            material.diffuse[0],
+            material.diffuse[1],
+            material.diffuse[2],
+        );
+        glUniform3f(
+            specular_uniform,
+            material.specular[0],
+            material.specular[1],
+            material.specular[2],
+        );
+        glUniform1f(shininess_uniform, material.shininess);
 
         // Cross-frame state variables
         let mut azimuth = PI / 4.0;
@@ -324,14 +316,12 @@ fn main() {
             let transform = projection * view;
             glUniformMatrix4fv(transform_uniform, 1, 0, transform.data.as_slice().as_ptr());
 
-            if let Some(material) = &material {
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, material.ambient_map);
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_2D, material.diffuse_map);
-                glActiveTexture(GL_TEXTURE2);
-                glBindTexture(GL_TEXTURE_2D, material.specular_map);
-            }
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, material.ambient_map);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, material.diffuse_map);
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, material.specular_map);
 
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
             glBufferData(
