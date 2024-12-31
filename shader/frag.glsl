@@ -13,6 +13,7 @@ struct Material {
   vec3 diffuse;
   vec3 specular;
   float shininess;
+  sampler2D ambient_map;
   sampler2D diffuse_map;
   sampler2D specular_map;
 };
@@ -32,7 +33,8 @@ void main() {
                       vec3(0.0, 1.0, 1.0), vec3(1.0, 0.0, 1.0));
 
   // Calculate ambient component
-  vec3 ambient = material.ambient * light.ambient;
+  vec3 ambient = material.ambient * light.ambient *
+                 vec3(texture(material.ambient_map, vert_tex));
 
   // Calculate diffuse component
   vec3 light_dir = normalize(light.position - vert_pos);

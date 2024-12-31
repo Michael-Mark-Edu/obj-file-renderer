@@ -8,6 +8,7 @@ pub struct Material {
     pub diffuse: [f32; 3],
     pub specular: [f32; 3],
     pub shininess: f32,
+    pub ambient_map: u32,
     pub diffuse_map: u32,
     pub specular_map: u32,
 }
@@ -34,6 +35,7 @@ pub fn get_material(filepath: &str, material_name: &str) -> Option<Material> {
     let mut diffuse = [1.0, 1.0, 1.0];
     let mut specular = [1.0, 1.0, 1.0];
     let mut shininess = 0.0;
+    let mut ambient_map = 0;
     let mut diffuse_map = 0;
     let mut specular_map = 0;
     'line_iter: for line in lines {
@@ -62,6 +64,40 @@ pub fn get_material(filepath: &str, material_name: &str) -> Option<Material> {
                 ]
             }
             Some("Ns") => shininess = split.next().unwrap().parse::<f32>().unwrap(),
+            Some("map_Ka") => unsafe {
+                // Load texture
+                let ambient_img = ImageReader::open(format!("texture/{}", split.next().unwrap()))
+                    .expect("Couldn't find container")
+                    .decode()
+                    .unwrap();
+                let ambient_img = ambient_img.flipv();
+                let ambient_bytes = ambient_img.as_bytes();
+
+                let mut ambient: u32 = 0;
+                glGenTextures(1, &mut ambient);
+                glBindTexture(GL_TEXTURE_2D, ambient);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER.0 as _);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER.0 as _);
+                glTexParameteri(
+                    GL_TEXTURE_2D,
+                    GL_TEXTURE_MIN_FILTER,
+                    GL_LINEAR_MIPMAP_LINEAR.0 as _,
+                );
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR.0 as _);
+                glTexImage2D(
+                    GL_TEXTURE_2D,
+                    0,
+                    GL_RGBA.0 as _,
+                    ambient_img.width() as _,
+                    ambient_img.height() as _,
+                    0,
+                    GL_RGBA,
+                    GL_UNSIGNED_BYTE,
+                    ambient_bytes.as_ptr() as _,
+                );
+                glGenerateMipmap(GL_TEXTURE_2D);
+                ambient_map = ambient;
+            },
             Some("map_Kd") => unsafe {
                 // Load texture
                 let diffuse_img = ImageReader::open(format!("texture/{}", split.next().unwrap()))
@@ -139,6 +175,7 @@ pub fn get_material(filepath: &str, material_name: &str) -> Option<Material> {
         diffuse,
         specular,
         shininess,
+        ambient_map,
         diffuse_map,
         specular_map,
     })

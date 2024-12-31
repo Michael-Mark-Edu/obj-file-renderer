@@ -3,6 +3,7 @@
 
 newmtl Material
 Ns 250.000000
-Ka 0.100000 0.100000 0.100000
+Ka 0.200000 0.200000 0.200000
+map_Ka container.png
 map_Kd container.png
 map_Ks container_specular.png

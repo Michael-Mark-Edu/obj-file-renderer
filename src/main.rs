@@ -174,21 +174,29 @@ fn main() {
         let (mesh, material) = get_mesh_data("mesh/cube.obj");
 
         // Get uniform locations
-        let diffuse_uniform =
+        let ambient_map_uniform =
+            glGetUniformLocation(shader_program, "material.ambient_map\0".as_ptr());
+        assert_ne!(
+            ambient_map_uniform, -1,
+            "Uniform \"material.ambient_map\" does not exist"
+        );
+        glUniform1i(ambient_map_uniform, 0);
+
+        let diffuse_map_uniform =
             glGetUniformLocation(shader_program, "material.diffuse_map\0".as_ptr());
         assert_ne!(
-            diffuse_uniform, -1,
+            diffuse_map_uniform, -1,
             "Uniform \"material.diffuse_map\" does not exist"
         );
-        glUniform1i(diffuse_uniform, 0);
+        glUniform1i(diffuse_map_uniform, 1);
 
-        let specular_uniform =
+        let specular_map_uniform =
             glGetUniformLocation(shader_program, "material.specular_map\0".as_ptr());
         assert_ne!(
-            specular_uniform, -1,
+            specular_map_uniform, -1,
             "Uniform \"material.specular_map\" does not exist"
         );
-        glUniform1i(specular_uniform, 1);
+        glUniform1i(specular_map_uniform, 2);
 
         let transform_uniform = glGetUniformLocation(shader_program, "transform\0".as_ptr());
         assert_ne!(
@@ -318,8 +326,10 @@ fn main() {
 
             if let Some(material) = &material {
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, material.diffuse_map);
+                glBindTexture(GL_TEXTURE_2D, material.ambient_map);
                 glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, material.diffuse_map);
+                glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, material.specular_map);
             }
 
