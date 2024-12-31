@@ -1,6 +1,6 @@
 use fermium::prelude::*;
+use gl33::global_loader::*;
 use gl33::*;
-use image::ImageReader;
 use std::{f32::consts::PI, fs::File, io::Read};
 
 mod vertex_gen;
@@ -57,33 +57,35 @@ fn main() {
         let ctx = SDL_GL_CreateContext(win);
         assert!(!ctx.0.is_null(), "GL context was null");
 
-        let gl = GlFns::load_from(&|p| SDL_GL_GetProcAddress(p.cast()))
-            .expect("Could not load from proc address");
+        //let gl = GlFns::load_from(&|p| SDL_GL_GetProcAddress(p.cast()))
+        //    .expect("Could not load from proc address");
+
+        gl33::global_loader::load_global_gl(&|p| SDL_GL_GetProcAddress(p.cast()));
 
         // Configuration flags
-        gl.Enable(GL_MULTISAMPLE);
-        gl.Enable(GL_CULL_FACE);
-        gl.Enable(GL_DEPTH_TEST);
-        gl.DepthFunc(GL_LEQUAL);
+        glEnable(GL_MULTISAMPLE);
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
 
         // Buffer object initialization
         let mut vao = 0;
-        gl.GenVertexArrays(1, &mut vao);
+        glGenVertexArrays(1, &mut vao);
         assert_ne!(vao, 0, "VAO was null");
-        gl.BindVertexArray(vao);
+        glBindVertexArray(vao);
 
         let mut vbo = 0;
-        gl.GenBuffers(1, &mut vbo);
-        gl.BindBuffer(GL_ARRAY_BUFFER, vbo);
-        gl.VertexAttribPointer(0, 3, GL_FLOAT, 0, 8 * 4, 0 as *const _);
-        gl.VertexAttribPointer(1, 2, GL_FLOAT, 0, 8 * 4, (3 * 4) as *const _);
-        gl.VertexAttribPointer(2, 3, GL_FLOAT, 0, 8 * 4, (5 * 4) as *const _);
-        gl.EnableVertexAttribArray(0);
-        gl.EnableVertexAttribArray(1);
-        gl.EnableVertexAttribArray(2);
+        glGenBuffers(1, &mut vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glVertexAttribPointer(0, 3, GL_FLOAT, 0, 8 * 4, 0 as *const _);
+        glVertexAttribPointer(1, 2, GL_FLOAT, 0, 8 * 4, (3 * 4) as *const _);
+        glVertexAttribPointer(2, 3, GL_FLOAT, 0, 8 * 4, (5 * 4) as *const _);
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
 
         // Compile and source vertex shader at shader/vert.glsl
-        let vertex_shader = gl.CreateShader(GL_VERTEX_SHADER);
+        let vertex_shader = glCreateShader(GL_VERTEX_SHADER);
         assert_ne!(vertex_shader, 0, "Vertex shader was null");
 
         let mut vertex_file = File::open("shader/vert.glsl").expect("Couldn't open vert.glsl");
@@ -93,27 +95,27 @@ fn main() {
             .expect("Read to string failed");
         drop(vertex_file);
 
-        gl.ShaderSource(
+        glShaderSource(
             vertex_shader,
             1,
             &(vertex_source.as_bytes().as_ptr().cast()),
             &(vertex_length as i32),
         );
 
-        gl.CompileShader(vertex_shader);
+        glCompileShader(vertex_shader);
 
         let mut success = 0;
-        gl.GetShaderiv(vertex_shader, GL_COMPILE_STATUS, &mut success);
+        glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &mut success);
         if success == 0 {
             let mut v: Vec<u8> = Vec::with_capacity(1024);
             let mut log_len = 0_i32;
-            gl.GetShaderInfoLog(vertex_shader, 1024, &mut log_len, v.as_mut_ptr().cast());
+            glGetShaderInfoLog(vertex_shader, 1024, &mut log_len, v.as_mut_ptr().cast());
             v.set_len(log_len.try_into().unwrap());
             panic!("Vertex Compile Error: {}", String::from_utf8_lossy(&v));
         }
 
         // Compile and source frag shader at shader/vert.glsl
-        let fragment_shader = gl.CreateShader(GL_FRAGMENT_SHADER);
+        let fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
         assert_ne!(fragment_shader, 0, "Fragment shader was null");
 
         let mut fragment_file = File::open("shader/frag.glsl").expect("Couldn't open frag.glsl");
@@ -123,197 +125,134 @@ fn main() {
             .expect("Read to string failed");
         drop(fragment_file);
 
-        gl.ShaderSource(
+        glShaderSource(
             fragment_shader,
             1,
             &(fragment_source.as_bytes().as_ptr().cast()),
             &(fragment_length as i32),
         );
 
-        gl.CompileShader(fragment_shader);
+        glCompileShader(fragment_shader);
 
         let mut success = 0;
-        gl.GetShaderiv(fragment_shader, GL_COMPILE_STATUS, &mut success);
+        glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &mut success);
         if success == 0 {
             let mut v: Vec<u8> = Vec::with_capacity(1024);
             let mut log_len = 0_i32;
-            gl.GetShaderInfoLog(fragment_shader, 1024, &mut log_len, v.as_mut_ptr().cast());
+            glGetShaderInfoLog(fragment_shader, 1024, &mut log_len, v.as_mut_ptr().cast());
             v.set_len(log_len.try_into().unwrap());
             panic!("Fragment Compile Error: {}", String::from_utf8_lossy(&v));
         }
 
         // Attach shaders to shader program
-        let shader_program = gl.CreateProgram();
-        gl.AttachShader(shader_program, vertex_shader);
-        gl.AttachShader(shader_program, fragment_shader);
-        gl.LinkProgram(shader_program);
+        let shader_program = glCreateProgram();
+        glAttachShader(shader_program, vertex_shader);
+        glAttachShader(shader_program, fragment_shader);
+        glLinkProgram(shader_program);
 
         let mut success = 0;
-        gl.GetProgramiv(shader_program, GL_LINK_STATUS, &mut success);
+        glGetProgramiv(shader_program, GL_LINK_STATUS, &mut success);
         if success == 0 {
             let mut v: Vec<u8> = Vec::with_capacity(1024);
             let mut log_len = 0_i32;
-            gl.GetProgramInfoLog(shader_program, 1024, &mut log_len, v.as_mut_ptr().cast());
+            glGetProgramInfoLog(shader_program, 1024, &mut log_len, v.as_mut_ptr().cast());
             v.set_len(log_len.try_into().unwrap());
             panic!("Program Link Error: {}", String::from_utf8_lossy(&v));
         }
 
         // Clean up shaders
-        gl.DeleteShader(vertex_shader);
-        gl.DeleteShader(fragment_shader);
+        glDeleteShader(vertex_shader);
+        glDeleteShader(fragment_shader);
 
         // Set program
-        gl.UseProgram(shader_program);
+        glUseProgram(shader_program);
 
         // Set clear color
-        gl.ClearColor(0.2, 0.3, 0.3, 1.0);
-
-        // Load texture
-        let diffuse_img = ImageReader::open("texture/container.png")
-            .expect("Couldn't find container")
-            .decode()
-            .unwrap();
-        let diffuse_img = diffuse_img.flipv();
-        let diffuse_bytes = diffuse_img.as_bytes();
-
-        let mut diffuse: u32 = 0;
-        gl.GenTextures(1, &mut diffuse);
-        gl.BindTexture(GL_TEXTURE_2D, diffuse);
-        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER.0 as _);
-        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER.0 as _);
-        gl.TexParameteri(
-            GL_TEXTURE_2D,
-            GL_TEXTURE_MIN_FILTER,
-            GL_LINEAR_MIPMAP_LINEAR.0 as _,
-        );
-        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR.0 as _);
-        gl.TexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RGBA.0 as _,
-            diffuse_img.width() as _,
-            diffuse_img.height() as _,
-            0,
-            GL_RGBA,
-            GL_UNSIGNED_BYTE,
-            diffuse_bytes.as_ptr() as _,
-        );
-        gl.GenerateMipmap(GL_TEXTURE_2D);
-
-        // Load specular map
-        let specular_img = ImageReader::open("texture/container_specular.png")
-            .expect("Couldn't find container")
-            .decode()
-            .unwrap();
-        let specular_img = specular_img.flipv();
-        let specular_bytes = specular_img.as_bytes();
-
-        let mut specular: u32 = 0;
-        gl.GenTextures(1, &mut specular);
-        gl.BindTexture(GL_TEXTURE_2D, specular);
-        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER.0 as _);
-        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER.0 as _);
-        gl.TexParameteri(
-            GL_TEXTURE_2D,
-            GL_TEXTURE_MIN_FILTER,
-            GL_LINEAR_MIPMAP_LINEAR.0 as _,
-        );
-        gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR.0 as _);
-        gl.TexImage2D(
-            GL_TEXTURE_2D,
-            0,
-            GL_RGBA.0 as _,
-            specular_img.width() as _,
-            specular_img.height() as _,
-            0,
-            GL_RGBA,
-            GL_UNSIGNED_BYTE,
-            specular_bytes.as_ptr() as _,
-        );
-        gl.GenerateMipmap(GL_TEXTURE_2D);
+        glClearColor(0.2, 0.3, 0.3, 1.0);
 
         // Get mesh and material data
         let (mesh, material) = get_mesh_data("mesh/cube.obj");
 
         // Get uniform locations
-        let diffuse_uniform = gl.GetUniformLocation(shader_program, "diffuse_map\0".as_ptr());
+        let diffuse_uniform =
+            glGetUniformLocation(shader_program, "material.diffuse_map\0".as_ptr());
         assert_ne!(
             diffuse_uniform, -1,
-            "Uniform \"diffuse_map\" does not exist"
+            "Uniform \"material.diffuse_map\" does not exist"
         );
-        gl.Uniform1i(diffuse_uniform, 0);
+        glUniform1i(diffuse_uniform, 0);
 
-        let specular_uniform = gl.GetUniformLocation(shader_program, "specular_map\0".as_ptr());
+        let specular_uniform =
+            glGetUniformLocation(shader_program, "material.specular_map\0".as_ptr());
         assert_ne!(
             specular_uniform, -1,
-            "Uniform \"specular_map\" does not exist"
+            "Uniform \"material.specular_map\" does not exist"
         );
-        gl.Uniform1i(specular_uniform, 1);
+        glUniform1i(specular_uniform, 1);
 
-        let transform_uniform = gl.GetUniformLocation(shader_program, "transform\0".as_ptr());
+        let transform_uniform = glGetUniformLocation(shader_program, "transform\0".as_ptr());
         assert_ne!(
             transform_uniform, -1,
             "Uniform \"transform\" does not exist"
         );
 
-        let camera_pos_uniform = gl.GetUniformLocation(shader_program, "camera_pos\0".as_ptr());
+        let camera_pos_uniform = glGetUniformLocation(shader_program, "camera_pos\0".as_ptr());
         assert_ne!(
             camera_pos_uniform, -1,
             "Uniform \"camera_pos\" does not exist"
         );
 
-        let ambient_uniform = gl.GetUniformLocation(shader_program, "material.ambient\0".as_ptr());
+        let ambient_uniform = glGetUniformLocation(shader_program, "material.ambient\0".as_ptr());
         assert_ne!(
             ambient_uniform, -1,
             "Uniform \"material.ambient\" does not exist"
         );
 
-        let diffuse_uniform = gl.GetUniformLocation(shader_program, "material.diffuse\0".as_ptr());
+        let diffuse_uniform = glGetUniformLocation(shader_program, "material.diffuse\0".as_ptr());
         assert_ne!(
             diffuse_uniform, -1,
             "Uniform \"material.diffuse\" does not exist"
         );
 
-        let specular_uniform =
-            gl.GetUniformLocation(shader_program, "material.specular\0".as_ptr());
+        let specular_uniform = glGetUniformLocation(shader_program, "material.specular\0".as_ptr());
         assert_ne!(
             specular_uniform, -1,
             "Uniform \"material.specular\" does not exist"
         );
 
         let shininess_uniform =
-            gl.GetUniformLocation(shader_program, "material.shininess\0".as_ptr());
+            glGetUniformLocation(shader_program, "material.shininess\0".as_ptr());
         assert_ne!(
             shininess_uniform, -1,
             "Uniform \"material.shininess\" does not exist"
         );
 
-        if let Some(material) = material {
-            gl.Uniform3f(
+        if let Some(material) = &material {
+            glUniform3f(
                 ambient_uniform,
                 material.ambient[0],
                 material.ambient[1],
                 material.ambient[2],
             );
-            gl.Uniform3f(
+            glUniform3f(
                 diffuse_uniform,
                 material.diffuse[0],
                 material.diffuse[1],
                 material.diffuse[2],
             );
-            gl.Uniform3f(
+            glUniform3f(
                 specular_uniform,
                 material.specular[0],
                 material.specular[1],
                 material.specular[2],
             );
-            gl.Uniform1f(shininess_uniform, material.shininess);
+            glUniform1f(shininess_uniform, material.shininess);
         } else {
             println!("Couldn't find a material; resorting to sensible defaults");
-            gl.Uniform3f(ambient_uniform, 0.1, 0.1, 0.1);
-            gl.Uniform3f(diffuse_uniform, 1.0, 1.0, 1.0);
-            gl.Uniform3f(specular_uniform, 0.5, 0.5, 0.5);
-            gl.Uniform1f(shininess_uniform, 32.0);
+            glUniform3f(ambient_uniform, 0.1, 0.1, 0.1);
+            glUniform3f(diffuse_uniform, 1.0, 1.0, 1.0);
+            glUniform3f(specular_uniform, 0.5, 0.5, 0.5);
+            glUniform1f(shininess_uniform, 32.0);
         }
 
         // Cross-frame state variables
@@ -358,11 +297,11 @@ fn main() {
                 distance * f32::sin(elevation),
                 distance * f32::sin(azimuth) * f32::cos(elevation),
             );
-            gl.Uniform3f(camera_pos_uniform, camera_pos.x, camera_pos.y, camera_pos.z);
+            glUniform3f(camera_pos_uniform, camera_pos.x, camera_pos.y, camera_pos.z);
 
             let (mut window_w, mut window_h) = (0, 0);
             SDL_GetWindowSize(win, &mut window_w, &mut window_h);
-            gl.Viewport(0, 0, window_w, window_h);
+            glViewport(0, 0, window_w, window_h);
 
             let view = glm::look_at(
                 &camera_pos,
@@ -375,23 +314,25 @@ fn main() {
             // otherwise I'd have to compute this multiplication for each vertex. Here I only
             // have to do it once for all vertices
             let transform = projection * view;
-            gl.UniformMatrix4fv(transform_uniform, 1, 0, transform.data.as_slice().as_ptr());
+            glUniformMatrix4fv(transform_uniform, 1, 0, transform.data.as_slice().as_ptr());
 
-            gl.ActiveTexture(GL_TEXTURE0);
-            gl.BindTexture(GL_TEXTURE_2D, diffuse);
-            gl.ActiveTexture(GL_TEXTURE1);
-            gl.BindTexture(GL_TEXTURE_2D, specular);
+            if let Some(material) = &material {
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, material.diffuse_map);
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, material.specular_map);
+            }
 
-            gl.BindBuffer(GL_ARRAY_BUFFER, vbo);
-            gl.BufferData(
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            glBufferData(
                 GL_ARRAY_BUFFER,
                 (mesh.len() * (4 * 8)) as isize,
                 mesh.as_ptr().cast(),
                 GL_STATIC_DRAW,
             );
 
-            gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            gl.DrawArrays(GL_TRIANGLES, 0, (3 * mesh.len()) as i32);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glDrawArrays(GL_TRIANGLES, 0, (3 * mesh.len()) as i32);
 
             SDL_GL_SwapWindow(win);
         }

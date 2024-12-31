@@ -7,14 +7,14 @@ in vec3 vert_normal;
 out vec4 final_color;
 
 uniform vec3 camera_pos;
-uniform sampler2D diffuse_map;
-uniform sampler2D specular_map;
 
 struct Material {
   vec3 ambient;
   vec3 diffuse;
   vec3 specular;
   float shininess;
+  sampler2D diffuse_map;
+  sampler2D specular_map;
 };
 
 struct Light {
@@ -37,7 +37,7 @@ void main() {
   // Calculate diffuse component
   vec3 light_dir = normalize(light.position - vert_pos);
   vec3 diffuse = material.diffuse * light.diffuse *
-                 vec3(texture(diffuse_map, vert_tex)) *
+                 vec3(texture(material.diffuse_map, vert_tex)) *
                  max(dot(vert_normal, light_dir), 0.0);
 
   // Calculate specular component
@@ -45,7 +45,7 @@ void main() {
   vec3 reflect_dir = reflect(-light_dir, vert_normal);
   vec3 specular =
       material.specular * light.specular *
-      vec3(texture(specular_map, vert_tex)) *
+      vec3(texture(material.specular_map, vert_tex)) *
       pow(max(dot(camera_dir, reflect_dir), 0.0), material.shininess);
 
   // Sum the components together
