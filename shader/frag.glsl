@@ -17,6 +17,7 @@ struct Material {
   sampler2D diffuse_map;
   sampler2D specular_map;
 };
+uniform Material material;
 
 struct DirectionalLight {
   vec3 direction;
@@ -25,14 +26,7 @@ struct DirectionalLight {
   vec3 specular;
 };
 
-uniform Material material;
-
-// Phong lighting model
-void main() {
-  DirectionalLight light =
-      DirectionalLight(vec3(-1.0, -1.0, -1.0), vec3(1.0, 1.0, 1.0),
-                       vec3(1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0));
-
+vec3 calc_directional_light(DirectionalLight light) {
   // Calculate ambient component
   vec3 ambient = material.ambient * light.ambient *
                  vec3(texture(material.ambient_map, vert_tex));
@@ -51,6 +45,21 @@ void main() {
       vec3(texture(material.specular_map, vert_tex)) *
       pow(max(dot(camera_dir, reflect_dir), 0.0), material.shininess);
 
+  return ambient + diffuse + specular;
+}
+
+void main() {
+  DirectionalLight light1 =
+      DirectionalLight(vec3(-1.0, -1.0, -1.0), vec3(1.0, 1.0, 1.0),
+                       vec3(1.0, 0.0, 0.0), vec3(1.0, 1.0, 1.0));
+
+  DirectionalLight light2 =
+      DirectionalLight(vec3(-1.0, 1.0, 1.0), vec3(1.0, 1.0, 1.0),
+                       vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0));
+
+  vec3 directional_lights =
+      calc_directional_light(light1) + calc_directional_light(light2);
+
   // Sum the components together
-  final_color = vec4(ambient + diffuse + specular, 1.0);
+  final_color = vec4(directional_lights, 1.0);
 }
