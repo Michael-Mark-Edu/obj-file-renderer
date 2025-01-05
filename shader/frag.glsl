@@ -39,11 +39,11 @@ vec3 calc_directional_light(DirectionalLight light) {
 
   // Calculate specular component
   vec3 camera_dir = normalize(camera_pos - vert_pos);
-  vec3 reflect_dir = reflect(-light_dir, vert_normal);
+  vec3 half_angle = normalize(light_dir + camera_dir);
   vec3 specular =
       material.specular * light.specular *
       vec3(texture(material.specular_map, vert_tex)) *
-      pow(max(dot(camera_dir, reflect_dir), 0.0), material.shininess);
+      pow(max(dot(vert_normal, half_angle), 0.0), material.shininess);
 
   return ambient + diffuse + specular;
 }
@@ -71,11 +71,11 @@ vec3 calc_point_light(PointLight light) {
 
   // Calculate specular component
   vec3 camera_dir = normalize(camera_pos - vert_pos);
-  vec3 reflect_dir = reflect(-light_dir, vert_normal);
+  vec3 half_angle = normalize(light_dir + camera_dir);
   vec3 specular =
       material.specular * light.specular *
       vec3(texture(material.specular_map, vert_tex)) *
-      pow(max(dot(camera_dir, reflect_dir), 0.0), material.shininess);
+      pow(max(dot(vert_normal, half_angle), 0.0), material.shininess);
 
   // Calculate attenuation
   float distance = length(light.position - vert_pos);
@@ -95,7 +95,7 @@ void main() {
                        vec3(0.0, 1.0, 0.0), vec3(1.0, 1.0, 1.0));
 
   PointLight light3 =
-      PointLight(vec3(0.0, 2.0, 0.0), vec3(1.0), vec3(0.0, 0.0, 1.0), vec3(1.0),
+      PointLight(vec3(0.0, 1.5, 0.0), vec3(1.0), vec3(0.0, 0.0, 1.0), vec3(1.0),
                  1.0, 0.22, 0.2);
 
   vec3 directional_lights =
